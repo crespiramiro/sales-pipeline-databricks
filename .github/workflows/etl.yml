@@ -1,0 +1,55 @@
+# .github/workflows/etl.yml
+#
+# ETL cada 15 minutos, horario 8am-1am Argentina (UTC-3)
+# 8am  ARG = 11:00 UTC
+# 1am  ARG = 04:00 UTC (día siguiente)
+
+name: ETL MercadoLibre → Databricks Bronze
+
+on:
+  schedule:
+    - cron: '*/10 11-23 * * *'   # 8am-8:45pm ARG
+    - cron: '*/10 0-4 * * *'     # 9pm-1am ARG
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Forzar ejecución aunque esté fuera de horario'
+        type: boolean
+        default: false
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependencias
+        run: pip install -r ingestion/requirements.txt
+
+      - name: 🚀 Ejecutar ETL
+        env:
+          APP_ID:           ${{ secrets.APP_ID }}
+          CLIENT_SECRET:    ${{ secrets.CLIENT_SECRET }}
+          REDIRECT_URI:     ${{ secrets.REDIRECT_URI }}
+          TOKEN_FILE:       auth/tokens/meli_tokens.json
+          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          RESEND_API_KEY:   ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM:       ${{ secrets.EMAIL_FROM }}
+        working-directory: ingestion
+        run: python run_etl.py
+
+      - name: 📋 Mostrar logs si falló
+        if: failure()
+        run: |
+          echo "=== ETL FALLÓ ==="
+          cat ingestion/logs/etl.log 2>/dev/null || echo "No hay archivo de log"
