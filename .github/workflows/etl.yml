@@ -35,6 +35,11 @@ jobs:
       - name: 📦 Instalar dependencias
         run: pip install -r ingestion/requirements.txt
 
+      - name: 🔑 Restaurar tokens MercadoLibre
+        run: |
+          mkdir -p ingestion/auth/tokens
+          echo '${{ secrets.MELI_TOKENS }}' > ingestion/auth/tokens/meli_tokens.json
+
       - name: 🚀 Ejecutar ETL
         env:
           APP_ID:           ${{ secrets.APP_ID }}
