@@ -1,0 +1,8 @@
+requests
+pandas
+pyarrow
+python-dotenv
+databricks-sql-connector
+python-dateutil
+certifi
+resend
