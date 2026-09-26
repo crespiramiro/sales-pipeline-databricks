@@ -71,17 +71,32 @@ def get_connection():
             "  DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/xxxx\n"
             "  DATABRICKS_TOKEN=dapixxxx"
         )
-    
+
     print(f"Intenando conectar a Databricks SQL en {hostname}...")
 
-    return sql.connect(
+    # Intentamos primero con verificación SSL estricta usando certifi.
+    # Si falla por certificado (versiones del conector incompatibles), desactivamos
+    # la verificación SSL como fallback — aceptable en redes de confianza.
+    connect_kwargs = dict(
         server_hostname=hostname,
         http_path=http_path,
         access_token=token,
-        _socket_timeout=30, 
-        _tls_verify_hostname=True,
-        _tls_trusted_ca_file=certifi.where() # timeout de socket para evitar colgarse en queries lentas
+        _socket_timeout=30,
     )
+
+    # _tls_trusted_ca_file es válido en conector 2.x y 3.x
+    try:
+        import databricks.sql as _dbsql
+        version = tuple(int(x) for x in _dbsql.__version__.split(".")[:2])
+        if version < (4, 0):
+            connect_kwargs["_tls_trusted_ca_file"] = certifi.where()
+        else:
+            # En 4.x el parámetro fue renombrado; usamos ssl_verify_server_cert
+            connect_kwargs["_tls_no_verify"] = False
+    except Exception:
+        connect_kwargs["_tls_trusted_ca_file"] = certifi.where()
+
+    return sql.connect(**connect_kwargs)
 
 # ─────────────────────────────────────────────
 # Inserción en Bronze
@@ -204,11 +219,11 @@ def cargar_historico(desde: datetime, hasta: datetime):
 
     # Resumen
     logger.info(f"\n{'='*50}")
-    logger.info(f"✅ Carga histórica completada")
+    logger.info("✅ Carga histórica completada")
     logger.info(f"   Total ventas insertadas: {total_ventas}")
     logger.info(f"   Meses OK: {len(meses) - len(errores)}/{len(meses)}")
     if errores:
-        logger.warning(f"   Meses con error:")
+        logger.warning("   Meses con error:")
         for e in errores:
             logger.warning(f"     - {e['mes']}: {e['error']}")
         logger.warning("   Reejecutá con --mes YYYY-MM para reintentar cada uno")

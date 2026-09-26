@@ -26,7 +26,7 @@ logger = setup_logger()
 def run_etl(max_retries=3, delay_seconds=30):
     """
     Ejecuta el ETL con reintentos.
-    
+
     Cambios vs versión anterior:
     - No hay crear_tablas() ni verificar_datos() — eso es trabajo de Silver en Databricks
     - No hay engine.dispose() — no hay base de datos

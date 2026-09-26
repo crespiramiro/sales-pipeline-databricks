@@ -138,7 +138,7 @@ def obtener_ventas_por_periodo(access_token, seller_id, fecha_desde, fecha_hasta
 def main(access_token):
     """
     Extrae ventas de las últimas 2 horas y retorna DataFrame.
-    
+
     La ventana de 2hs es intencional: corremos cada 15 min,
     entonces cada venta aparece ~8 veces. Silver deduplica con MERGE.
     Esto garantiza que NUNCA perdemos una venta.

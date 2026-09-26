@@ -1,0 +1,147 @@
+name: CI/CD Pipeline — Sales Pipeline Databricks
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy_env:
+        description: 'Deploy environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Stage 1: Basic Checks (Linting, Formatting, Syntax Verification)
+  # ───────────────────────────────────────────────────────────────────────────
+  lint-and-compile:
+    name: 🧹 1. Basic Checks (Lint & Compile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 📦 Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: 🔍 Run Ruff Linter
+        run: ruff check .
+
+      - name: ⚙️ Verify Python Syntax (Compile check)
+        run: python -m compileall ingestion/ tests/
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Stage 2: Unit Testing
+  # ───────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: 🧪 2. Run Unit Tests
+    needs: lint-and-compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 📦 Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: 🧪 Execute Pytest suite
+        run: pytest --verbose tests/
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Stage 3: Deploy to Databricks Workspace
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: 🚀 3. Deploy to Databricks Workspace
+    needs: unit-tests
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install Databricks CLI
+        uses: databricks/setup-cli@v0.2.1
+
+      - name: 🔑 Configure Databricks CLI Credentials
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "⚠️ DATABRICKS_HOST or DATABRICKS_TOKEN secret is not set. Skipping live workspace deployment."
+            exit 0
+          fi
+          echo "✅ Databricks CLI environment configured."
+
+      - name: 📤 Sync Notebooks & Code to Databricks Workspace
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "Skipping databricks workspace import because credentials are not set."
+            exit 0
+          fi
+          echo "Uploading notebooks to /Workspace/Shared/sales-pipeline-databricks/notebooks..."
+          databricks workspace import_dir notebooks /Shared/sales-pipeline-databricks/notebooks --overwrite
+          
+          echo "Uploading ingestion scripts to /Workspace/Shared/sales-pipeline-databricks/ingestion..."
+          databricks workspace import_dir ingestion /Shared/sales-pipeline-databricks/ingestion --overwrite
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Stage 4: Post-Deployment Smoke Test
+  # ───────────────────────────────────────────────────────────────────────────
+  post-deploy-test:
+    name: 🔬 4. Post-Deployment Verification
+    needs: deploy
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install Databricks CLI
+        uses: databricks/setup-cli@v0.2.1
+
+      - name: 🔬 Verify Databricks Workspace Deployment
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "Skipping workspace verification because DATABRICKS secrets are omitted."
+            exit 0
+          fi
+          echo "Listing deployed files in Databricks Workspace..."
+          databricks workspace list /Shared/sales-pipeline-databricks/notebooks
+          echo "✅ Post-deployment verification completed successfully!"

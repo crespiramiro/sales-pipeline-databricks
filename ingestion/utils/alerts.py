@@ -18,16 +18,16 @@ def send_alert(email_to, subject, body, email_from=EMAIL_FROM):
         if not RESEND_API_KEY:
             logger.error("❌ RESEND_API_KEY no configurada en .env")
             return False
-            
+
         # URL de la API de Resend
         url = "https://api.resend.com/emails"
-        
+
         # Headers para la API
         headers = {
             "Authorization": f"Bearer {RESEND_API_KEY}",
             "Content-Type": "application/json"
         }
-        
+
         # Payload del email
         payload = {
             "from": email_from,
@@ -44,17 +44,17 @@ def send_alert(email_to, subject, body, email_from=EMAIL_FROM):
             </html>
             """
         }
-        
+
         # Enviar email
         response = requests.post(url, headers=headers, json=payload)
-        
+
         if response.status_code == 200:
             logger.info(f"✅ Alerta enviada exitosamente a {email_to}")
             return True
         else:
             logger.error(f"❌ Error enviando email: {response.status_code} - {response.text}")
             return False
-            
+
     except Exception as e:
         logger.error(f"❌ No se pudo enviar la alerta por mail: {e}")
         return False
