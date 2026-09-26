@@ -110,11 +110,11 @@ jobs:
             echo "Skipping databricks workspace import because credentials are not set."
             exit 0
           fi
-          echo "Uploading notebooks to /Workspace/Shared/sales-pipeline-databricks/notebooks..."
-          databricks workspace import_dir notebooks /Shared/sales-pipeline-databricks/notebooks --overwrite
+          echo "Uploading notebooks to /Shared/sales-pipeline-databricks/notebooks..."
+          databricks sync notebooks /Shared/sales-pipeline-databricks/notebooks
           
-          echo "Uploading ingestion scripts to /Workspace/Shared/sales-pipeline-databricks/ingestion..."
-          databricks workspace import_dir ingestion /Shared/sales-pipeline-databricks/ingestion --overwrite
+          echo "Uploading ingestion scripts to /Shared/sales-pipeline-databricks/ingestion..."
+          databricks sync ingestion /Shared/sales-pipeline-databricks/ingestion
 
   # ───────────────────────────────────────────────────────────────────────────
   # Stage 4: Post-Deployment Smoke Test
