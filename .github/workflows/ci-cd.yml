@@ -105,16 +105,17 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          TARGET_PATH: ${{ secrets.DATABRICKS_WORKSPACE_PATH || '/Shared/sales-pipeline-databricks' }}
         run: |
           if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
             echo "Skipping databricks workspace import because credentials are not set."
             exit 0
           fi
-          echo "Uploading notebooks to /Shared/sales-pipeline-databricks/notebooks..."
-          databricks sync notebooks /Shared/sales-pipeline-databricks/notebooks
+          echo "Uploading notebooks to ${TARGET_PATH}/notebooks..."
+          databricks sync notebooks "${TARGET_PATH}/notebooks"
           
-          echo "Uploading ingestion scripts to /Shared/sales-pipeline-databricks/ingestion..."
-          databricks sync ingestion /Shared/sales-pipeline-databricks/ingestion
+          echo "Uploading ingestion scripts to ${TARGET_PATH}/ingestion..."
+          databricks sync ingestion "${TARGET_PATH}/ingestion"
 
   # ───────────────────────────────────────────────────────────────────────────
   # Stage 4: Post-Deployment Smoke Test
@@ -137,11 +138,12 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          TARGET_PATH: ${{ secrets.DATABRICKS_WORKSPACE_PATH || '/Shared/sales-pipeline-databricks' }}
         run: |
           if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
             echo "Skipping workspace verification because DATABRICKS secrets are omitted."
             exit 0
           fi
           echo "Listing deployed files in Databricks Workspace..."
-          databricks workspace list /Shared/sales-pipeline-databricks/notebooks
+          databricks workspace list "${TARGET_PATH}/notebooks"
           echo "✅ Post-deployment verification completed successfully!"
