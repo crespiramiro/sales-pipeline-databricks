@@ -12,7 +12,7 @@ Flujo:
 import sys
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 
 from auth.renewToken import renewToken
 from etl.getSales import main as extract_sales
@@ -66,9 +66,10 @@ def run_etl(max_retries=3, delay_seconds=30):
                 # Solo mandamos email cuando TODOS los reintentos fallaron
                 # No spameamos por errores transitorios
                 logger.error("💥 ETL falló definitivamente.")
+                now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')
                 send_alert(
                     "crespiramiro@outlook.com",
-                    f"🚨 ETL Falló — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC",
+                    f"🚨 ETL Falló — {now_str} UTC",
                     f"El ETL falló después de {max_retries} intentos.\n\n"
                     f"Error: {e}\n\n"
                     f"Traceback:\n{tb}"
@@ -77,14 +78,14 @@ def run_etl(max_retries=3, delay_seconds=30):
 
 
 def main():
-    start = datetime.utcnow()
+    start = datetime.now(timezone.utc)
     try:
         run_etl()
-        elapsed = (datetime.utcnow() - start).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - start).total_seconds()
         logger.info(f"⏱️  Tiempo total: {elapsed:.1f}s")
         sys.exit(0)
     except Exception:
-        elapsed = (datetime.utcnow() - start).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - start).total_seconds()
         logger.error(f"⏱️  Falló después de {elapsed:.1f}s")
         sys.exit(1)
 

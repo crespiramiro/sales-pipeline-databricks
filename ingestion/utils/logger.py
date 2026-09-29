@@ -7,6 +7,9 @@ def setup_logger(name="ETL", log_dir="logs"):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
+    if logger.handlers:
+        return logger
+
     log_file = os.path.join(log_dir, "etl.log")
     handler = TimedRotatingFileHandler(log_file, when="midnight", backupCount=7)
     formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')

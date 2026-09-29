@@ -14,7 +14,7 @@ import io
 import os
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from utils.logger import setup_logger
 
@@ -92,7 +92,7 @@ def cargar_a_bronze(df: pd.DataFrame) -> str:
             "DATABRICKS_HOST y DATABRICKS_TOKEN deben estar configurados en .env"
         )
 
-    timestamp   = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp   = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename    = f"ventas_{timestamp}_UTC.parquet"
     volume_path = f"{VOLUME_BRONZE_PATH}/{filename}"
 

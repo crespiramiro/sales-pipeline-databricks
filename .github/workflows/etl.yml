@@ -35,10 +35,21 @@ jobs:
       - name: 📦 Instalar dependencias
         run: pip install -r ingestion/requirements.txt
 
-      - name: 🔑 Restaurar tokens MercadoLibre
+      - name: 💾 Restaurar cache de tokens MercadoLibre
+        uses: actions/cache@v4
+        id: meli-cache
+        with:
+          path: ingestion/auth/tokens/meli_tokens.json
+          key: meli-tokens-${{ runner.os }}-${{ github.run_id }}-${{ github.run_number }}
+          restore-keys: |
+            meli-tokens-${{ runner.os }}-
+
+      - name: 🔑 Restaurar tokens desde Secret (fallback)
         run: |
           mkdir -p ingestion/auth/tokens
-          echo '${{ secrets.MELI_TOKENS }}' > ingestion/auth/tokens/meli_tokens.json
+          if [ ! -s ingestion/auth/tokens/meli_tokens.json ]; then
+            echo '${{ secrets.MELI_TOKENS }}' > ingestion/auth/tokens/meli_tokens.json
+          fi
 
       - name: 🚀 Ejecutar ETL
         env:

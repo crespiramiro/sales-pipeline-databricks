@@ -10,33 +10,38 @@ load_dotenv()
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 EMAIL_FROM = os.getenv("EMAIL_FROM")
 
-def send_alert(email_to, subject, body, email_from=EMAIL_FROM):
+def send_alert(email_to, subject, body, email_from=None):
     """
     Envía alertas por email usando Resend (servicio gratuito)
     """
     try:
-        if not RESEND_API_KEY:
+        api_key = (os.getenv("RESEND_API_KEY") or RESEND_API_KEY or "").strip()
+        if not api_key:
             logger.error("❌ RESEND_API_KEY no configurada en .env")
             return False
+
+        sender = (email_from or os.getenv("EMAIL_FROM") or EMAIL_FROM or "").strip()
+        recipient = (email_to or "").strip()
+        clean_subject = (subject or "").strip().replace("\n", " ").replace("\r", "")
 
         # URL de la API de Resend
         url = "https://api.resend.com/emails"
 
         # Headers para la API
         headers = {
-            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
 
         # Payload del email
         payload = {
-            "from": email_from,
-            "to": [email_to],
-            "subject": subject,
+            "from": sender,
+            "to": [recipient],
+            "subject": clean_subject,
             "html": f"""
             <html>
             <body>
-                <h2>{subject}</h2>
+                <h2>{clean_subject}</h2>
                 <p>{body.replace(chr(10), '<br>')}</p>
                 <hr>
                 <p><small>Enviado automáticamente por el sistema ETL</small></p>

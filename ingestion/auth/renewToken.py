@@ -30,12 +30,18 @@ def renewToken():
     if not tokens:
         raise Exception("No hay tokens guardados. Primero ejecutá getTokenOnce.py")
 
-    refresh_token = tokens.get("refresh_token")
+    app_id = (os.getenv("APP_ID") or APP_ID or "").strip()
+    client_secret = (os.getenv("CLIENT_SECRET") or CLIENT_SECRET or "").strip()
+    refresh_token = (tokens.get("refresh_token") or "").strip()
+
+    if not app_id or not client_secret or not refresh_token:
+        raise Exception("Faltan credenciales (APP_ID, CLIENT_SECRET o refresh_token) para renovar el token.")
+
     url_token = "https://api.mercadolibre.com/oauth/token"
     payload = {
         "grant_type":    "refresh_token",
-        "client_id":     APP_ID,
-        "client_secret": CLIENT_SECRET,
+        "client_id":     app_id,
+        "client_secret": client_secret,
         "refresh_token": refresh_token
     }
     headers  = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -47,7 +53,11 @@ def renewToken():
         print("Access token renovado y guardado en", TOKEN_FILE)
         return data["access_token"]
     else:
-        raise Exception(f"Error renovando token: {response.status_code} - {response.text}")
+        err_msg = f"Error renovando token: {response.status_code} - {response.text}"
+        if "invalid_grant" in response.text:
+            err_msg += "\n💡 Sugerencia: El refresh token expiró o ya fue utilizado previamente. " \
+                       "Ejecutá getTokenOnce.py localmente y actualizá el secret MELI_TOKENS en GitHub Secrets."
+        raise Exception(err_msg)
 
 if __name__ == "__main__":
     token = renewToken()
