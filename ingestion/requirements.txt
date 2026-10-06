@@ -6,3 +6,5 @@ databricks-sql-connector
 python-dateutil
 certifi
 resend
+sqlalchemy
+psycopg2-binary

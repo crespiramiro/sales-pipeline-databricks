@@ -23,6 +23,13 @@ def cargar_tokens():
         print("Cargando tokens desde", TOKEN_FILE)
         with open(TOKEN_FILE, "r") as f:
             return json.load(f)
+    tokens_env = os.getenv("MELI_TOKENS_JSON") or os.getenv("MELI_TOKENS")
+    if tokens_env:
+        try:
+            print("Cargando tokens desde variable de entorno (MELI_TOKENS_JSON / MELI_TOKENS)")
+            return json.loads(tokens_env)
+        except Exception as e:
+            print("Error parseando variable de entorno de tokens:", e)
     return None
 
 def renewToken():

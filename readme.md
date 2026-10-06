@@ -51,13 +51,15 @@ sales-pipeline-databricks/
 │   ├── etl/
 │   │   ├── getSales.py              # Extracción ventas API Meli (ventana 2hs)
 │   │   ├── load.py                  # Upload Parquet → Unity Catalog Volume
+│   │   ├── products_fetch.py        # Sincronización de productos MeLi → NeonDB (Web)
 │   │   └── historical/
 │   │       ├── full_load.py         # Carga histórica mes a mes
 │   │       └── load_categorias.py   # Carga one-time de categorías
 │   ├── utils/
 │   │   ├── logger.py                # Logger con rotación diaria
 │   │   └── alerts.py                # Alertas email via Resend
-│   ├── run_etl.py                   # Orquestador principal
+│   ├── run_etl.py                   # Orquestador principal ventas → Databricks
+│   ├── run_products_web_sync.py     # Orquestador catálogo → NeonDB (Web)
 │   └── requirements.txt
 ├── notebooks/                        # Notebooks Databricks
 │   ├── 00_EDA/                      # Análisis exploratorio Bronze
@@ -71,7 +73,8 @@ sales-pipeline-databricks/
 │   └── decisiones_tecnicas.md      # Log de decisiones de arquitectura y diseño
 └── .github/
     └── workflows/
-        └── etl.yml                  # Schedule GitHub Actions
+        ├── etl.yml                  # Schedule ETL ventas (Databricks)
+        └── products_web_sync.yml    # Schedule sincronización productos (NeonDB)
 ```
 
 ## Stack tecnológico
