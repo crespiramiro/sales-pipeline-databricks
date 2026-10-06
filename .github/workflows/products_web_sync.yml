@@ -2,7 +2,7 @@ name: Sincronizar Catálogo MeLi → NeonDB (Web)
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       force_run:
